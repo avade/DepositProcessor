@@ -15,7 +15,7 @@ The application uses Spring Batch 2.1 to handle the orchestration of the batch j
 
 Details to follow...
 
-<h2><License</h2>
+<h2>License</h2>
 
 Copyright (c) 2013 Alex Ley.
 
