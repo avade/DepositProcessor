@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://www.springframework.org/schema/beans" xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context-3.1.xsd 
+	http://www.springframework.org/schema/batch 
+    http://www.springframework.org/schema/batch/spring-batch-2.1.xsd
+    http://www.springframework.org/schema/util 
+	http://www.springframework.org/schema/util/spring-util-3.1.xsd 
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.1.xsd 
+	http://www.springframework.org/schema/aop 
+	http://www.springframework.org/schema/aop/spring-aop-3.1.xsd ">
+
+	<context:annotation-config />
+
+	<tx:annotation-driven mode="proxy"
+		proxy-target-class="true" transaction-manager="txManager"/>
+
+	<context:component-scan
+		base-package="com.batch.sample.DepositProcessor, com.batch.sample.DepositProcessor.*" />
+
+	<!-- spring batch beans / configurations -->
+	<bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor">
+		<property name="concurrencyLimit" value="${genius.analyics.concurrencylimit}" />
+	</bean>
+
+	<bean id="splitExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor" />
+
+	<bean id="jobRepository"
+		class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+		<property name="transactionManager" ref="transactionManager" />
+	</bean>
+
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+	<bean id="transactionManager"
+		class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+	<!-- spring batch jobs -->
+	<batch:job id="proccessLogJob">
+		<batch:split id="split" task-executor="splitExecutor">
+			<batch:flow>
+				<batch:step id="loadQueue">
+					<batch:tasklet>
+						<batch:chunk reader="fileReader" writer="queueWriter"
+							commit-interval="1" />
+					</batch:tasklet>
+				</batch:step>
+			</batch:flow>
+			<batch:flow>
+				<batch:step id="extractAndLoad">
+					<batch:tasklet task-executor="taskExecutor">
+						<batch:chunk reader="queueReader" writer="dbWriter"
+							commit-interval="1000" />
+					</batch:tasklet>
+				</batch:step>
+			</batch:flow>
+		</batch:split>
+	</batch:job>
+
+	<!-- Readers for use in spring batch jobs -->
+	<bean id="fileReader"
+		class="com.batch.sample.DepositProcessor.service.FileReaderService">
+		<property name="fileName" value="src/test/resources/input.txt" />
+		<property name="linesToLoad" value="${genius.analyics.linestocache}" />
+	</bean>
+
+	<bean id="queueReader"
+		class="com.batch.sample.DepositProcessor.service.QueueReaderService"
+		scope="step">
+		<property name="queue" ref="blockingQueue" />
+		<property name="timeoutSeconds" value="${genius.analyics.queuereadtimeoutseconds}" />
+	</bean>
+
+	<!-- writers for use in spring batch jobs -->
+	<bean id="dbWriter"
+		class="org.springframework.batch.item.adapter.ItemWriterAdapter">
+		<property name="targetObject" ref="processDepositDetails" />
+		<property name="targetMethod" value="processStringSubmission" />
+	</bean>
+
+	<bean id="queueWriter"
+		class="org.springframework.batch.item.adapter.ItemWriterAdapter">
+		<property name="targetObject" ref="writeQueue" />
+		<property name="targetMethod" value="processStringSubmission" />
+	</bean>
+
+	<!-- other beans -->
+	<bean id="processDepositDetails"
+		class="com.batch.sample.DepositProcessor.service.ProcessDepositDetailsToDBService" />
+
+	<bean id="writeQueue" depends-on="blockingQueue"
+		class="com.batch.sample.DepositProcessor.service.QueueWriterService">
+		<property name="queue" ref="blockingQueue" />
+	</bean>
+
+	<bean id="blockingQueue" class="java.util.concurrent.LinkedBlockingQueue">
+		<constructor-arg value="${genius.analyics.maxqueuedepth}" />
+	</bean>
+
+	<bean id="contextApplicationContextProvider"
+		class="com.batch.sample.DepositProcessor.helper.ApplicationContextProvider" />
+
+</beans>

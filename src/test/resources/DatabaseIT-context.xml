@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd"
+	default-autowire="byType">
+
+	<import resource="spring-testapplicationContext.xml"/>
+	<import resource="spring-testdataAccessContext.xml"/>
+	
+		<bean id="placeholderConfig" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:jdbc.${os.arch}.properties</value>
+				<value>classpath:c3p0.properties</value>
+				<value>classpath:application.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	
+</beans>
