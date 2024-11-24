@@ -10,7 +10,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<spring.version>3.2.18.RELEASE</spring.version>
+		<spring.version>6.1.14</spring.version>
 		<hibernate.version>4.1.1.Final</hibernate.version>
 	</properties>
 
@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>org.springframework.batch</groupId>
 			<artifactId>spring-batch-core</artifactId>
-			<version>4.3.7</version>
+			<version>5.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
